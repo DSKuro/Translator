@@ -3,6 +3,8 @@
         xmlns:vm="using:Translator.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:dialogues="clr-namespace:Translator.Services.Dialogues.Base"
+		dialogues:DialogueManager.Register="MainWindow"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="Translator.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -18,8 +20,8 @@
 	<Grid RowDefinitions="Auto, 2*, *">
 		<Menu Grid.Row="0">
 			<MenuItem Header="Файл">
-				<MenuItem Header="Открыть"/>
-				<MenuItem Header="Сохранить"/>
+				<MenuItem Header="Открыть" Command="{Binding OpenFileCommand}"/>
+				<MenuItem Header="Сохранить" Command="{Binding SaveFileCommand}"/>
 			</MenuItem>
 			<MenuItem Header="Выполнить">
 				<MenuItem Header="Открыть"/>
