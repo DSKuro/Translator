@@ -3,7 +3,7 @@
         xmlns:vm="using:Translator.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="Translator.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
@@ -15,6 +15,31 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
+	<Grid RowDefinitions="Auto, 2*, *">
+		<Menu Grid.Row="0">
+			<MenuItem Header="Файл">
+				<MenuItem Header="Открыть"/>
+				<MenuItem Header="Сохранить"/>
+			</MenuItem>
+			<MenuItem Header="Выполнить">
+				<MenuItem Header="Открыть"/>
+			</MenuItem>
+		</Menu>
+		<Grid Grid.Row="1" ColumnDefinitions="*, *" Margin="15, 5, 15, 0">
+			<Grid Grid.Column="0" RowDefinitions="Auto, *">
+				<TextBlock Grid.Row="0" Margin="0, 0, 0, 10" Text="Исходный код"/>
+				<TextBox Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"/>
+			</Grid>
+			<Grid Margin="10, 0, 0, 0" Grid.Column="1" RowDefinitions="Auto, *">
+				<TextBlock Grid.Row="0" Margin="0, 0, 0, 10" Text="Результат"/>
+				<TextBox Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
+			</Grid>
+		</Grid>
+		<Grid Grid.Row="2" Margin="15, 10, 15, 5">
+			<Grid RowDefinitions="Auto, *">
+				<TextBlock Grid.Row="0" Margin="0, 0, 0, 10" Text="Состояние компиляции"/>
+				<TextBox Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
+			</Grid>
+		</Grid>
+	</Grid>
 </Window>
