@@ -15,7 +15,7 @@ namespace Translator.ViewModels
             _messageBoxService = messageBoxService;
         }
 
-        protected async Task<ButtonResult?> MessageBoxHelper(object context, MessageBoxOptions options, Action callback)
+        protected async Task<ButtonResult?> MessageBoxHelper(object context, MessageBoxOptions options, Action? callback = null)
         {
             ButtonResult? result = null;
             try

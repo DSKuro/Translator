@@ -48,6 +48,7 @@ namespace Translator.Configuration
         private void AddFiles()
         {
             _serviceCollection.AddTransient<IReaderFactory, ReaderFactory>();
+            _serviceCollection.AddTransient<IWriterFactory, WriterFactory>();
         }
 
         private void AddViewModelsAndWindows()

@@ -2,7 +2,7 @@
 {
     public interface IReader : IDisposable
     {
-        string ReadAllFile();
-        char ReadNextSymbol();
+        public string ReadAllFile();
+        public char ReadNextSymbol();
     }
 }
