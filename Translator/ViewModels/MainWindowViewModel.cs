@@ -24,6 +24,10 @@ namespace Translator.ViewModels
 
         [ObservableProperty]
         private string _originalCode;
+        [ObservableProperty]
+        private string _resultCode;
+        [ObservableProperty]
+        private string _compilationCode;
 
         public MainWindowViewModel(IMessageBoxService messageBoxService,
             IStorageService storageService) 
@@ -44,8 +48,9 @@ namespace Translator.ViewModels
                 {
                     using (Reader reader = new Reader(fileProperties.First().Path.AbsolutePath))
                     {
+                        OriginalCode = reader.ReadAllFile();
                         SyntaxAnalyser analyser = new SyntaxAnalyser(reader);
-                       
+
                         if (!analyser.Compile())
                         {
                             string message = "";
@@ -56,6 +61,10 @@ namespace Translator.ViewModels
                             await MessageBoxHelper("MainWindow", new MessageBoxOptions(
                                MessageBoxConstants.Error.Value, message,
                                ButtonEnum.Ok));
+                        }
+                        else
+                        {
+                            CompilationCode = analyser.GetCommands();
                         }
                         //LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
                         //NameTable nameTable = new NameTable();

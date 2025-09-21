@@ -34,13 +34,13 @@
 			</Grid>
 			<Grid Margin="10, 0, 0, 0" Grid.Column="1" RowDefinitions="Auto, *">
 				<TextBlock Grid.Row="0" Margin="0, 0, 0, 10" Text="Результат"/>
-				<TextBox Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
+				<TextBox Text="{Binding ResultCode, Mode=TwoWay}" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
 			</Grid>
 		</Grid>
 		<Grid Grid.Row="2" Margin="15, 10, 15, 5">
 			<Grid RowDefinitions="Auto, *">
 				<TextBlock Grid.Row="0" Margin="0, 0, 0, 10" Text="Состояние компиляции"/>
-				<TextBox Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
+				<TextBox Text="{Binding CompilationCode, Mode=TwoWay}" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True"/>
 			</Grid>
 		</Grid>
 	</Grid>

@@ -1,4 +1,5 @@
 ﻿using ClassLibrary.Files;
+using ClassLibrary.Generator;
 using ClassLibrary.Lexems;
 using ClassLibrary.Lexems.Models;
 
@@ -10,6 +11,7 @@ namespace ClassLibrary.Syntax
         private readonly NameTable _nameTable;
         private readonly List<SyntaxError> _errors;
         private readonly Reader _reader;
+        private readonly CodeGenerator _generator;
 
         public List<SyntaxError> Errors => _errors;
 
@@ -19,12 +21,16 @@ namespace ClassLibrary.Syntax
             _nameTable = new NameTable();
             _errors = new List<SyntaxError>();
             _reader = reader;
+            _generator = new CodeGenerator(_nameTable);
             _analyzer.ProcessNextLexem();
         }
 
         public bool Compile()
         {
+            _generator.DeclareDataSegment();
             ProcessVariablesDeclaration();
+            _generator.DeclareVariables();
+            _generator.DeclareStackCodeSegment();
             CheckLexem(Lexem.Separator);
             if (_analyzer.CurrentLexem != Lexem.Begin)
             {
@@ -38,6 +44,8 @@ namespace ClassLibrary.Syntax
             _analyzer.ProcessNextLexem();
             ProcessSequenceInstructions();
             CheckLexem(Lexem.End);
+            _generator.DeclareMainProcedureEnd();
+            _generator.DeclareCodeEnd();
             return _errors.Count == 0;
         }
 
@@ -303,6 +311,11 @@ namespace ClassLibrary.Syntax
             };
 
             _errors.Add(error);
+        }
+
+        public string GetCommands()
+        {
+            return _generator.GetAllCommands();
         }
     }
 
