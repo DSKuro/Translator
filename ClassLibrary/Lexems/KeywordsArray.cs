@@ -25,8 +25,8 @@ namespace ClassLibrary.Lexems
             AddKeyword(new Keyword("Print", Lexem.Print));
             AddKeyword(new Keyword("Var", Lexem.Var));
             AddKeyword(new Keyword("Const", Lexem.Const));
-            AddKeyword(new Keyword("Integer", Lexem.Type));
-            AddKeyword(new Keyword("Logical", Lexem.Type));
+            AddKeyword(new Keyword("Integer", Lexem.Integer));
+            AddKeyword(new Keyword("Logical", Lexem.Logical));
         }
 
         public void AddKeyword(Keyword keyword)

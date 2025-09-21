@@ -87,9 +87,20 @@ namespace ClassLibrary.Syntax
 
             _analyzer.ProcessNextLexem();
 
-            if (_analyzer.CurrentLexem != Lexem.Type)
+            if (_analyzer.CurrentLexem != Lexem.Integer && _analyzer.CurrentLexem != Lexem.Logical)
             {
                 AddError($"Ожидался тип данных после двоеточия, но получена лексема '{_analyzer.CurrentLexem}'");
+            }
+            else
+            {
+                if (_analyzer.CurrentLexem == Lexem.Integer)
+                {
+                    _nameTable.SetTypeForAllVariables(tType.Integer);
+                }
+                else
+                {
+                    _nameTable.SetTypeForAllVariables(tType.Logical);
+                }
             }
 
             _analyzer.ProcessNextLexem();
@@ -120,10 +131,12 @@ namespace ClassLibrary.Syntax
                 if (x != null)
                 {
                     ProcessAssign();
+                    CheckLexem(Lexem.Semicolon);
                 }
                 else
                 {
                     AddError($"Идентификатор {_analyzer.CurrentName} не определён");
+                    _analyzer.ProcessNextLexem();
                 }
             }
         }
@@ -144,11 +157,136 @@ namespace ClassLibrary.Syntax
 
         private tType ProcessExpression()
         {
-            while (_analyzer.CurrentLexem != Lexem.Separator)
+            //while (_analyzer.CurrentLexem != Lexem.Separator)
+            //{
+            //    _analyzer.ProcessNextLexem();
+            //}
+            //return tType.Integer;
+            return ProcessSumOrSub();
+        }
+
+        private tType ProcessSumOrSub()
+        {
+            tType t;
+            Lexem op;
+            if (_analyzer.CurrentLexem == Lexem.Plus ||
+                _analyzer.CurrentLexem == Lexem.Minus)
+            {
+                op = _analyzer.CurrentLexem;
+                _analyzer.ProcessNextLexem();
+                t = ProcessMultOrDiv();
+            }
+            else
+            {
+                t = ProcessMultOrDiv();
+            }
+            if (_analyzer.CurrentLexem == Lexem.Plus ||
+                _analyzer.CurrentLexem == Lexem.Minus)
+            {
+                do
+                {
+                    op = _analyzer.CurrentLexem;
+                    _analyzer.ProcessNextLexem();
+
+                    if (t != tType.Integer)
+                    {
+                        AddError("Арифметические операции + и - применимы только к целым числам");
+                        t = tType.None;
+                    }
+
+                    t = ProcessMultOrDiv();
+
+                    if (t != tType.Integer)
+                    {
+                        AddError("Арифметические операции + и - применимы только к целым числам");
+                        t = tType.None;
+                    }
+                   
+                    switch (op)
+                    {
+                        case Lexem.Plus:
+                        case Lexem.Minus:
+                            break;
+                    }
+                } while (_analyzer.CurrentLexem == Lexem.Plus ||
+                _analyzer.CurrentLexem == Lexem.Minus);
+            }
+            return t;
+        }
+
+        private tType ProcessMultOrDiv()
+        {
+            Lexem op;
+            tType t = ProcessSubExpression();
+            if (_analyzer.CurrentLexem == Lexem.Multiplication ||
+                _analyzer.CurrentLexem == Lexem.Division)
+            {
+                do
+                {
+                    op = _analyzer.CurrentLexem;
+                    _analyzer.ProcessNextLexem();
+
+                    if (t != tType.Integer)
+                    {
+                        AddError("Арифметические операции * и / применимы только к целым числам");
+                        t = tType.None;
+                    }
+
+                    t = ProcessSubExpression();
+
+                    if (t != tType.Integer)
+                    {
+                        AddError("Арифметические операции + и - применимы только к целым числам");
+                        t = tType.None;
+                    }
+
+                    switch (op)
+                    {
+                        case Lexem.Multiplication:
+                        case Lexem.Division:
+                            break;
+                    }
+                } while (_analyzer.CurrentLexem == Lexem.Multiplication ||
+                _analyzer.CurrentLexem == Lexem.Division);
+            }
+            return t;
+        }
+
+        private tType ProcessSubExpression()
+        {
+            Identificator x;
+            tType t = tType.None;
+            if (_analyzer.CurrentLexem == Lexem.Name)
+            {
+                x = _nameTable.GetIdentificator(_analyzer.CurrentName);
+                if (x != null && x.Category == tCat.Var)
+                {
+                    _analyzer.ProcessNextLexem();
+                    return x.Type;
+                }
+                else
+                {
+                    AddError($"Не удалось определить идентификатор '{_analyzer.CurrentName}'");
+                    return tType.None;
+                }
+            }
+            else if (_analyzer.CurrentLexem == Lexem.Number)
             {
                 _analyzer.ProcessNextLexem();
+                return tType.Integer;
             }
-            return tType.Integer;
+            else if (_analyzer.CurrentLexem == Lexem.LeftBracket)
+            {
+                _analyzer.ProcessNextLexem();
+                t = ProcessExpression();
+                CheckLexem(Lexem.RightBracket);
+                return t;
+            }
+            else
+            {
+                AddError("Не удалось разобрать выражение");
+                return t;
+            }
         }
 
         private void AddError(string message)

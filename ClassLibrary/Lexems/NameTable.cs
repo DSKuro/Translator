@@ -24,6 +24,14 @@ namespace ClassLibrary.Lexems
             return identificator;
         }
 
+        public void SetTypeForAllVariables(tType type)
+        {
+            foreach (Identificator identificator in _identificators)
+            {
+                identificator.Type = type;
+            }
+        }
+
         public bool ContainsIdentificator(string name)
         {
             LinkedListNode<Identificator> node = _identificators.First;
