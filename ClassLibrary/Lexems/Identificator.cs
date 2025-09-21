@@ -10,7 +10,7 @@
         None, Integer, Logical
     }
 
-    public struct Identificator
+    public class Identificator
     {
         public string Name
         {

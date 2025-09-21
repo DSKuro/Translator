@@ -45,9 +45,7 @@ namespace ClassLibrary.Lexems
             {
                 node = node.Next;
             }
-            return node == null ? 
-                new Identificator()
-                : node.Value;
+            return node?.Value;
         }
 
         public LinkedList<Identificator> GetAllIdentificators()

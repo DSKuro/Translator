@@ -26,10 +26,22 @@ namespace ClassLibrary.Syntax
         {
             ProcessVariablesDeclaration();
             CheckLexem(Lexem.Separator);
+            if (_analyzer.CurrentLexem != Lexem.Begin)
+            {
+                AddError($"Ожидалась лексема 'Begin', но получена '{_analyzer.CurrentLexem}'");
+            }
+            else
+            {
+                _analyzer.ProcessNextLexem();
+            }
+
+            _analyzer.ProcessNextLexem();
+            ProcessSequenceInstructions();
+            CheckLexem(Lexem.End);
             return _errors.Count == 0;
         }
 
-        public void CheckLexem(Lexem awaitedLexem)
+        private void CheckLexem(Lexem awaitedLexem)
         {
             if (_analyzer.CurrentLexem != awaitedLexem)
             {
@@ -39,7 +51,7 @@ namespace ClassLibrary.Syntax
             _analyzer.ProcessNextLexem();
         }
 
-        public void ProcessVariablesDeclaration()
+        private void ProcessVariablesDeclaration()
         {
             CheckLexem(Lexem.Var);
             if (_analyzer.CurrentLexem != Lexem.Name)
@@ -88,6 +100,55 @@ namespace ClassLibrary.Syntax
             }
 
             _analyzer.ProcessNextLexem();
+        }
+
+        private void ProcessSequenceInstructions()
+        {
+            ProcessInstruction();
+            while (_analyzer.CurrentLexem == Lexem.Separator)
+            {
+                _analyzer.ProcessNextLexem();
+                ProcessInstruction();
+            }
+        }
+
+        private void ProcessInstruction()
+        {
+            if (_analyzer.CurrentLexem == Lexem.Name)
+            {
+                Identificator x = _nameTable.GetIdentificator(_analyzer.CurrentName);
+                if (x != null)
+                {
+                    ProcessAssign();
+                }
+                else
+                {
+                    AddError($"Идентификатор {_analyzer.CurrentName} не определён");
+                }
+            }
+        }
+
+        private void ProcessAssign()
+        {
+            _analyzer.ProcessNextLexem();
+            if (_analyzer.CurrentLexem == Lexem.Assign)
+            {
+                _analyzer.ProcessNextLexem();
+                ProcessExpression();
+            }
+            else
+            {
+                AddError($"Ожидалось присваивание, но получена лексема {_analyzer.CurrentLexem}");
+            }
+        }
+
+        private tType ProcessExpression()
+        {
+            while (_analyzer.CurrentLexem != Lexem.Separator)
+            {
+                _analyzer.ProcessNextLexem();
+            }
+            return tType.Integer;
         }
 
         private void AddError(string message)
