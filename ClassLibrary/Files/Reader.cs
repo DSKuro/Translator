@@ -9,10 +9,17 @@
         private const char _carriage = '\r';
         private const char _tab = '\t';
 
-        private int _numberOfRow;
-        private int _symbolPosition;
-
         private readonly StreamReader _streamReader;
+
+        public int SymbolPosition
+        {
+            get; private set;
+        }
+
+        public int NumberOfRow
+        {
+            get; private set;
+        }
 
         public char CurrentSymbol
         {
@@ -26,8 +33,8 @@
             if (File.Exists(_filePath))
             {
                 _streamReader = new StreamReader(_filePath);
-                _numberOfRow = 1;
-                _symbolPosition = 0;
+                NumberOfRow = 1;
+                SymbolPosition = 0;
                 CurrentSymbol = '\0';
                 ReadNextSymbol();
             }
@@ -55,8 +62,8 @@
             switch (CurrentSymbol)
             {
                 case _transfer:
-                    _numberOfRow++;
-                    _symbolPosition = 0;
+                    NumberOfRow++;
+                    SymbolPosition = 0;
                     break;
 
                 case _carriage:
@@ -65,7 +72,7 @@
                     break;
 
                 default:
-                    _symbolPosition++;
+                    SymbolPosition++;
                     break;
             }
         }

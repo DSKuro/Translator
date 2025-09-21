@@ -10,6 +10,20 @@ namespace ClassLibrary.Lexems
         private readonly KeywordsArray _keywords;
 
         private readonly int MAX_ID_LENGTH = 255;
+        public int CurrentRow
+        {
+            get; private set;
+        }
+
+        public int CurrentPosition
+        {
+            get; private set;
+        }
+
+        public char CurrentSymbol
+        {
+            get; private set;
+        }
 
         public string CurrentName
         {
@@ -30,7 +44,11 @@ namespace ClassLibrary.Lexems
         }
 
         public void ProcessNextLexem()
-        {     
+        {
+            CurrentSymbol = _reader.CurrentSymbol;
+            CurrentRow = _reader.NumberOfRow;
+            CurrentPosition = _reader.SymbolPosition;
+
             while (_reader.CurrentSymbol == ' ')
             {
                 _reader.ReadNextSymbol();

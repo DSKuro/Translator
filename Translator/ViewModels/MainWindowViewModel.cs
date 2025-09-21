@@ -3,6 +3,7 @@ using ClassLibrary.Files;
 using ClassLibrary.Lexems;
 using ClassLibrary.Lexems.Exceptions;
 using ClassLibrary.Lexems.Models;
+using ClassLibrary.Syntax;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MsBox.Avalonia.Enums;
@@ -10,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Translator.Models;
 using Translator.Services.Dialogues.MessageBox;
@@ -44,28 +44,41 @@ namespace Translator.ViewModels
                 {
                     using (Reader reader = new Reader(fileProperties.First().Path.AbsolutePath))
                     {
-                        LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
-                        NameTable nameTable = new NameTable();
-                        while (analyzer.CurrentLexem != Lexem.EOF)
+                        SyntaxAnalyser analyser = new SyntaxAnalyser(reader);
+                       
+                        if (!analyser.Compile())
                         {
-                            if (analyzer.CurrentLexem == Lexem.Name
-                                && !nameTable.ContainsIdentificator(analyzer.CurrentName)) 
+                            string message = "";
+                            foreach (SyntaxError error in analyser.Errors)
                             {
-                                nameTable.AddIdentificator(analyzer.CurrentName, tCat.Var);
+                                message += error.ToString() + "\n";
                             }
-                            //await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                            //   MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
-                            //    ButtonEnum.Ok));
-                            analyzer.ProcessNextLexem();
-                        }
-                        LinkedListNode<Identificator> node = nameTable.GetAllIdentificators().First;
-                        while (node != null)
-                        {
                             await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                              MessageBoxConstants.Error.Value, $"{node.Value.Name}",
+                               MessageBoxConstants.Error.Value, message,
                                ButtonEnum.Ok));
-                            node = node.Next;
                         }
+                        //LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
+                        //NameTable nameTable = new NameTable();
+                        //while (analyzer.CurrentLexem != Lexem.EOF)
+                        //{
+                        //    if (analyzer.CurrentLexem == Lexem.Name
+                        //        && !nameTable.ContainsIdentificator(analyzer.CurrentName)) 
+                        //    {
+                        //        nameTable.AddIdentificator(analyzer.CurrentName, tCat.Var);
+                        //    }
+                        //    //await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                        //    //   MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
+                        //    //    ButtonEnum.Ok));
+                        //    analyzer.ProcessNextLexem();
+                        //}
+                        //LinkedListNode<Identificator> node = nameTable.GetAllIdentificators().First;
+                        //while (node != null)
+                        //{
+                        //    await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                        //      MessageBoxConstants.Error.Value, $"{node.Value.Name}",
+                        //       ButtonEnum.Ok));
+                        //    node = node.Next;
+                        //}
                     }
                 }
             }
