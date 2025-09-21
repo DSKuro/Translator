@@ -10,7 +10,7 @@ namespace ClassLibrary.Lexems
         public KeywordsArray()
         {
             _keywordPointer = 0;
-            _keywords = new Keyword[7];
+            _keywords = new Keyword[11];
             AddDefaultKeywords();
         }
 
@@ -23,6 +23,10 @@ namespace ClassLibrary.Lexems
             AddKeyword(new Keyword("For", Lexem.For));
             AddKeyword(new Keyword("To", Lexem.To));
             AddKeyword(new Keyword("Print", Lexem.Print));
+            AddKeyword(new Keyword("Var", Lexem.Var));
+            AddKeyword(new Keyword("Const", Lexem.Const));
+            AddKeyword(new Keyword("Integer", Lexem.Integer));
+            AddKeyword(new Keyword("Logical", Lexem.Logical));
         }
 
         public void AddKeyword(Keyword keyword)
@@ -32,7 +36,7 @@ namespace ClassLibrary.Lexems
 
         public Lexem GetKeywordLexem(string word)
         {
-            for (int i = _keywordPointer - 1; i > 0; i--)
+            for (int i = _keywordPointer - 1; i >= 0; i--)
             {
                 if (_keywords[i].Word == word)
                 {

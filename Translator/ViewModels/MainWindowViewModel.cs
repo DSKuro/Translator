@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Translator.Models;
 using Translator.Services.Dialogues.MessageBox;
@@ -20,9 +21,6 @@ namespace Translator.ViewModels
     public partial class MainWindowViewModel : ViewModelMessageBox
     {
         private readonly IStorageService _storageService;
-        //private readonly Reader _reader;
-        //private readonly Writer _writer;
-        //private readonly LexicalAnalyzer _lexicalAnalyzer;
 
         [ObservableProperty]
         private string _originalCode;
@@ -47,12 +45,26 @@ namespace Translator.ViewModels
                     using (Reader reader = new Reader(fileProperties.First().Path.AbsolutePath))
                     {
                         LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
+                        NameTable nameTable = new NameTable();
                         while (analyzer.CurrentLexem != Lexem.EOF)
                         {
-                            await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                               MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
-                                ButtonEnum.Ok));
+                            if (analyzer.CurrentLexem == Lexem.Name
+                                && !nameTable.ContainsIdentificator(analyzer.CurrentName)) 
+                            {
+                                nameTable.AddIdentificator(analyzer.CurrentName, tCat.Var);
+                            }
+                            //await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                            //   MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
+                            //    ButtonEnum.Ok));
                             analyzer.ProcessNextLexem();
+                        }
+                        LinkedListNode<Identificator> node = nameTable.GetAllIdentificators().First;
+                        while (node != null)
+                        {
+                            await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                              MessageBoxConstants.Error.Value, $"{node.Value.Name}",
+                               ButtonEnum.Ok));
+                            node = node.Next;
                         }
                     }
                 }
