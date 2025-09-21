@@ -1,5 +1,8 @@
 ﻿using Avalonia.Platform.Storage;
-using ClassLibrary.Files.Interfaces;
+using ClassLibrary.Files;
+using ClassLibrary.Lexems;
+using ClassLibrary.Lexems.Exceptions;
+using ClassLibrary.Lexems.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MsBox.Avalonia.Enums;
@@ -17,21 +20,18 @@ namespace Translator.ViewModels
     public partial class MainWindowViewModel : ViewModelMessageBox
     {
         private readonly IStorageService _storageService;
-        private readonly IReaderFactory _readerFactory;
-        private readonly IWriterFactory _writerFactory;
+        //private readonly Reader _reader;
+        //private readonly Writer _writer;
+        //private readonly LexicalAnalyzer _lexicalAnalyzer;
 
         [ObservableProperty]
         private string _originalCode;
 
         public MainWindowViewModel(IMessageBoxService messageBoxService,
-            IStorageService storageService,
-            IReaderFactory readerFactory,
-            IWriterFactory writerFactory) 
+            IStorageService storageService) 
             : base(messageBoxService) 
         { 
             _storageService = storageService;
-            _readerFactory = readerFactory;
-            _writerFactory = writerFactory;
         }
 
         [RelayCommand]
@@ -44,17 +44,24 @@ namespace Translator.ViewModels
                     StorageOpenConstants.OpenBaseTextFile.Type));
                 if (fileProperties.Count() > 0)
                 {
-                    using (IReader reader = _readerFactory.CreateReader(fileProperties.First().Path.AbsolutePath))
+                    using (Reader reader = new Reader(fileProperties.First().Path.AbsolutePath))
                     {
-                        //char symbol;
-                        //do
-                        //{
-                        //    symbol = reader.ReadNextSymbol();
-                        //} while (symbol != -1);
-                        string allData = reader.ReadAllFile();
-                        OriginalCode = allData;
+                        LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
+                        while (analyzer.CurrentLexem != Lexem.EOF)
+                        {
+                            await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                               MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
+                                ButtonEnum.Ok));
+                            analyzer.ProcessNextLexem();
+                        }
                     }
                 }
+            }
+            catch (LexicalException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                   MessageBoxConstants.Error.Value, ex.Message,
+                    ButtonEnum.Ok));
             }
             catch (ArgumentNullException ex)
             {
@@ -113,7 +120,7 @@ namespace Translator.ViewModels
                     StorageSaveConstants.OpenBaseTextFile.Types));
                 if (fileProperties != null)
                 {
-                    using (IWriter writer = _writerFactory.CreateWriter(true, fileProperties.Path.AbsolutePath))
+                    using (Writer writer = new Writer(true, fileProperties.Path.AbsolutePath))
                     {
                         writer.WriteToFile("test");
                     }

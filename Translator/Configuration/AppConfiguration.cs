@@ -1,13 +1,4 @@
-﻿using Avalonia.Controls;
-using Avalonia.Logging;
-using ClassLibrary.Files;
-using ClassLibrary.Files.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Translator.Services.Dialogues.Base;
 using Translator.Services.Dialogues.MessageBox;
 using Translator.Services.Dialogues.Storage;
@@ -33,7 +24,6 @@ namespace Translator.Configuration
         private void BuildServiceCollectionImpl()
         {
             AddStorage();
-            AddFiles();
             AddViewModelsAndWindows();
         }
 
@@ -43,12 +33,6 @@ namespace Translator.Configuration
             _serviceCollection.AddTransient<IDialogueHelper, DialogueHelper>();
             _serviceCollection.AddTransient<IMessageBoxService, MessageBoxService>();
             _serviceCollection.AddTransient<IStorageService, StorageService>();
-        }
-
-        private void AddFiles()
-        {
-            _serviceCollection.AddTransient<IReaderFactory, ReaderFactory>();
-            _serviceCollection.AddTransient<IWriterFactory, WriterFactory>();
         }
 
         private void AddViewModelsAndWindows()

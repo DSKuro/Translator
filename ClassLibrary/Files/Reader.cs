@@ -1,21 +1,23 @@
-﻿using ClassLibrary.Files.Interfaces;
-
-namespace ClassLibrary.Files
+﻿namespace ClassLibrary.Files
 {
-    public class Reader : IReader, IDisposable
+    public class Reader : IDisposable
     {
         private readonly string _filePath;
 
-        private const int _endOfFile = -1;
-        private const int _transfer = '\n';
-        private const int _carriage = '\r';
-        private const int _tab = '\t';
+        private const char _endOfFile = '\0';
+        private const char _transfer = '\n';
+        private const char _carriage = '\r';
+        private const char _tab = '\t';
 
         private int _numberOfRow;
         private int _symbolPosition;
-        private char _currentSymbol;
 
         private readonly StreamReader _streamReader;
+
+        public char CurrentSymbol
+        {
+            get; private set;
+        }
 
         public Reader(string filePath)
         {
@@ -26,6 +28,8 @@ namespace ClassLibrary.Files
                 _streamReader = new StreamReader(_filePath);
                 _numberOfRow = 1;
                 _symbolPosition = 0;
+                CurrentSymbol = '\0';
+                ReadNextSymbol();
             }
         }
 
@@ -34,20 +38,22 @@ namespace ClassLibrary.Files
             return File.ReadAllText(_filePath);
         }
 
-        public char ReadNextSymbol()
+        public void ReadNextSymbol()
         {
-            int currentSymbol = _streamReader.Read();
-            return ProcessSymbol(currentSymbol);
+            int nextSymbol = _streamReader.Read();
+            if (nextSymbol == -1)
+            {
+                CurrentSymbol = _endOfFile;
+                return;
+            }
+            CurrentSymbol = Convert.ToChar(nextSymbol);
+            ProcessSymbol();
         }
 
-        private char ProcessSymbol(int currentSymbol)
+        private void ProcessSymbol()
         {
-            switch (currentSymbol)
+            switch (CurrentSymbol)
             {
-                case _endOfFile:
-                    _currentSymbol = Convert.ToChar(_endOfFile);
-                    break;
-
                 case _transfer:
                     _numberOfRow++;
                     _symbolPosition = 0;
@@ -55,14 +61,13 @@ namespace ClassLibrary.Files
 
                 case _carriage:
                 case _tab:
-                    return ReadNextSymbol();
+                    ReadNextSymbol();
+                    break;
 
                 default:
                     _symbolPosition++;
-                    _currentSymbol = Convert.ToChar(currentSymbol);
                     break;
             }
-            return _currentSymbol;
         }
 
         public void Dispose() 

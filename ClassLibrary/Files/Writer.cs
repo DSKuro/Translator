@@ -1,8 +1,6 @@
-﻿using ClassLibrary.Files.Interfaces;
-
-namespace ClassLibrary.Files
+﻿namespace ClassLibrary.Files
 {
-    public class Writer : IWriter
+    public class Writer : IDisposable
     {
         private readonly StreamWriter _writer;
 
