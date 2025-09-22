@@ -23,7 +23,7 @@ namespace ClassLibrary.Generator
 
         public void DeclareDataSegment()
         {
-            AddInstruction("data segment para public \"data\"");
+            AddInstruction("data segment para public 'data'");
         }
 
         public void DeclareStackCodeSegment()
@@ -32,11 +32,11 @@ namespace ClassLibrary.Generator
             AddInstruction("BUFEND    DB '$'");
             AddInstruction("data ends");
             AddInstruction("stk segment stack");
-            AddInstruction("db 256 dup (\"?\")");
+            AddInstruction("db 256 dup ('?')");
             AddInstruction("stk ends");
-            AddInstruction("code segment para public \"code\"");
-            AddInstruction("main proc");
+            AddInstruction("code segment para public 'code'");
             AddInstruction("assume cs:code,ds:data,ss:stk");
+            AddInstruction("main proc");
             AddInstruction("mov ax,data");
             AddInstruction("mov ds,ax");
         }
@@ -52,6 +52,27 @@ namespace ClassLibrary.Generator
         {
             AddInstruction("code ends");
             AddInstruction("end main");
+        }
+
+        public void DeclarePrint()
+        {
+            AddInstruction("PRINT PROC NEAR");
+            AddInstruction("MOV   CX, 10");
+            AddInstruction("MOV   DI, BUFEND - PRINT_BUF");
+            AddInstruction("PRINT_LOOP:");
+            AddInstruction("MOV   DX, 0");
+            AddInstruction("DIV   CX");
+            AddInstruction("ADD   DL, '0'");
+            AddInstruction("MOV   [PRINT_BUF + DI - 1], DL");
+            AddInstruction("DEC   DI");
+            AddInstruction("CMP   AL, 0");
+            AddInstruction("JNE   PRINT_LOOP");
+            AddInstruction("LEA   DX, PRINT_BUF");
+            AddInstruction("ADD   DX, DI");
+            AddInstruction("MOV   AH, 09H");
+            AddInstruction("INT   21H");
+            AddInstruction("RET");
+            AddInstruction("PRINT ENDP");
         }
 
         public void DeclareVariables()
