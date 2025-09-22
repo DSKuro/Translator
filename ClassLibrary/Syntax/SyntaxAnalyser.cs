@@ -14,6 +14,8 @@ namespace ClassLibrary.Syntax
         private readonly CodeGenerator _generator;
 
         private int _bracketLevel = 0;
+        private string _currentLabel = "";
+        private string _forVar = "";
         private bool _hasError = false;
 
         public List<SyntaxError> Errors => _errors;
@@ -204,6 +206,7 @@ namespace ClassLibrary.Syntax
             _analyzer.ProcessNextLexem();
             if (_analyzer.CurrentLexem == Lexem.Assign)
             {
+                _forVar = _analyzer.CurrentName;
                 _analyzer.ProcessNextLexem();
                 if (lexem == Lexem.To)
                 {
@@ -212,6 +215,8 @@ namespace ClassLibrary.Syntax
                     {
                         AddError("Нельзя назначить в цикл For нечисловое значение");
                     }
+                    CheckLexem(Lexem.To);
+
                     return;
                 }
                 ProcessExpression();
@@ -250,8 +255,40 @@ namespace ClassLibrary.Syntax
                 _analyzer.CurrentLexem == Lexem.LessEqual ||
                 _analyzer.CurrentLexem == Lexem.GreaterEqual)
             {
+                string transition = "";
+                switch (_analyzer.CurrentLexem)
+                {
+                    case Lexem.Equal:
+                        transition = "jne";
+                        break;
+
+                    case Lexem.Not:
+                        transition = "je";
+                        break;
+
+                    case Lexem.Greater:
+                        transition = "jle";
+                        break;
+
+                    case Lexem.GreaterEqual:
+                        transition = "jl";
+                        break;
+
+                    case Lexem.Less:
+                        transition = "jge";
+                        break;
+
+                    case Lexem.LessEqual:
+                        transition = "jg";
+                        break;
+                }
                 _analyzer.ProcessNextLexem();
                 ProcessSumOrSub();
+                _generator.AddInstruction("pop ax");
+                _generator.AddInstruction("pop bx");
+                _generator.AddInstruction("cmp bx, ax");
+                _generator.AddInstruction(transition + " " + _currentLabel);
+                _currentLabel = "";
                 t = tType.Logical;
             }
             return t;
@@ -260,19 +297,32 @@ namespace ClassLibrary.Syntax
         private void ProcessIf()
         {
             CheckLexem(Lexem.If);
+            _generator.AddLabel();
+            string lowLabel = _generator.GetCurrentLabel();
+            _currentLabel = lowLabel;
+            _generator.AddLabel();
+            string exitLabel = _generator.GetCurrentLabel();
             ProcessExpression();
             CheckLexem(Lexem.Then);
             CheckLexem(Lexem.Separator);
             CheckLexem(Lexem.IfBegin);
             CheckLexem(Lexem.Separator);
             ProcessSequenceInstructions();
+            _generator.AddInstruction("jmp " + exitLabel);
+            _generator.AddInstruction(lowLabel + ":");
             while (_analyzer.CurrentLexem == Lexem.ElseIf)
             {
+                //_generator.AddInstruction(lowLabel + ":");
+                _generator.AddLabel();
+                lowLabel = _generator.GetCurrentLabel();
+                _currentLabel = lowLabel;
                 _analyzer.ProcessNextLexem();
                 ProcessExpression();
                 CheckLexem(Lexem.Then);
                 CheckLexem(Lexem.Separator);
                 ProcessSequenceInstructions();
+                _generator.AddInstruction("jmp " + exitLabel);
+                _generator.AddInstruction(lowLabel + ":");
             }
             if (_analyzer.CurrentLexem == Lexem.Else)
             {
@@ -281,11 +331,18 @@ namespace ClassLibrary.Syntax
             }
             CheckLexem(Lexem.IfEnd);
             CheckLexem(Lexem.Separator);
+            _generator.AddInstruction(exitLabel + ":");
         }
 
         private void ProcessWhile()
         {
             CheckLexem(Lexem.While);
+            _generator.AddLabel();
+            string upLabel = _generator.GetCurrentLabel();
+            _generator.AddLabel();
+            string lowLabel = _generator.GetCurrentLabel();
+            _currentLabel = lowLabel;
+            _generator.AddInstruction(upLabel + ":");
             ProcessExpression();
             CheckLexem(Lexem.Do);
             CheckLexem(Lexem.Separator);
@@ -293,19 +350,53 @@ namespace ClassLibrary.Syntax
             ProcessSequenceInstructions();
             CheckLexem(Lexem.WhileEnd);
             CheckLexem(Lexem.Separator);
+            _generator.AddInstruction("jmp " + upLabel);
+            _generator.AddInstruction(lowLabel + ":");
         }
 
         private void ProcessFor()
         {
             CheckLexem(Lexem.For);
+            string varName = _analyzer.CurrentName;
+            Identificator x = _nameTable.GetIdentificator(varName);
+
             ProcessAssign(Lexem.To);
-            CheckLexem(Lexem.To);
-            ProcessExpression();
+            _generator.AddInstruction("pop ax");
+            _generator.AddInstruction("mov " + _forVar + ", ax");
+
+            _generator.AddLabel();
+            string startLabel = _generator.GetCurrentLabel();
+            _generator.AddLabel();
+            string exitLabel = _generator.GetCurrentLabel();
+
+            _generator.AddInstruction(startLabel + ":");
+
+            _generator.AddInstruction("mov ax, " + x.Name);
+            _generator.AddInstruction("push ax");
+            tType t = ProcessSubExpression();
+            if (t != tType.Integer)
+            {
+                AddError("Нельзя назначить в цикл For нечисловое значение");
+            } 
+            _generator.AddInstruction("pop bx");
+            _generator.AddInstruction("pop ax");
+            _generator.AddInstruction("cmp ax, bx");
+            _generator.AddInstruction("jg " + exitLabel);
+
             CheckLexem(Lexem.Do);
             CheckLexem(Lexem.Separator);
             CheckLexem(Lexem.ForBegin);
             CheckLexem(Lexem.Separator);
+
             ProcessSequenceInstructions();
+
+            _generator.AddInstruction("mov ax, " + x.Name);
+            _generator.AddInstruction("add ax, 1");
+            _generator.AddInstruction("mov " + x.Name + ", ax");
+            _generator.AddInstruction("jmp " + startLabel);
+
+            _generator.AddInstruction(exitLabel + ":");
+
             CheckLexem(Lexem.ForEnd);
             CheckLexem(Lexem.Separator);
         }
@@ -315,6 +406,12 @@ namespace ClassLibrary.Syntax
             CheckLexem(Lexem.Do);
             CheckLexem(Lexem.Separator);
             CheckLexem(Lexem.DoBegin);
+            _generator.AddLabel();
+            string upLabel = _generator.GetCurrentLabel();
+            _generator.AddLabel();
+            string lowLabel = _generator.GetCurrentLabel();
+            _currentLabel = lowLabel;
+            _generator.AddInstruction(upLabel + ":");
             CheckLexem(Lexem.Separator);
             ProcessSequenceInstructions();
             CheckLexem(Lexem.DoEnd);
@@ -322,6 +419,8 @@ namespace ClassLibrary.Syntax
             CheckLexem(Lexem.While);
             ProcessExpression();
             CheckLexem(Lexem.Separator);
+            _generator.AddInstruction("jmp " + upLabel);
+            _generator.AddInstruction(lowLabel + ":");
         }
 
         private tType ProcessSumOrSub()

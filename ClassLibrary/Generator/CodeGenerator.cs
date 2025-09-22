@@ -8,12 +8,23 @@ namespace ClassLibrary.Generator
 
         private string[] _code = new string[MAX_NUMBER_STRINGS];
         private int _codePointer = 0;
+        private int _countLabels = 0;
 
         private readonly NameTable _nameTable;
 
         public CodeGenerator(NameTable nameTable)
         {
             _nameTable = nameTable;
+        }
+
+        public void AddLabel()
+        {
+            _countLabels++;
+        }
+
+        public string GetCurrentLabel()
+        {
+            return "label" + _countLabels.ToString();
         }
 
         public void AddInstruction(string instruction)
