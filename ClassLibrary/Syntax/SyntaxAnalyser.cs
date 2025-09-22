@@ -45,6 +45,20 @@ namespace ClassLibrary.Syntax
             }
 
             ProcessSequenceInstructions();
+            CheckLexem(Lexem.End);
+            CheckLexem(Lexem.Separator);
+            if (_analyzer.CurrentLexem != Lexem.Print)
+            {
+                AddError($"Ожидалась инструкция Print, но получена лексема {_analyzer.CurrentLexem}");
+            }
+            else
+            {
+                ProcessPrintInstruction();
+            }
+            if (_analyzer.CurrentLexem != Lexem.EOF)
+            {
+                AddError($"Ожидался конец файла, но получена лексема {_analyzer.CurrentLexem}");
+            }
             _generator.DeclareMainProcedureEnd();
             _generator.DeclarePrint();
             _generator.DeclareCodeEnd();
@@ -144,20 +158,6 @@ namespace ClassLibrary.Syntax
                 _analyzer.ProcessNextLexem();
                 ProcessInstruction();
             }
-            CheckLexem(Lexem.End);
-            CheckLexem(Lexem.Separator);
-            if (_analyzer.CurrentLexem != Lexem.Print)
-            {
-                AddError($"Ожидалась инструкция Print, но получена лексема {_analyzer.CurrentLexem}");
-            }
-            else
-            {
-                ProcessPrintInstruction();
-            }
-            if (_analyzer.CurrentLexem != Lexem.EOF)
-            {
-                AddError($"Ожидался конец файла, но получена лексема {_analyzer.CurrentLexem}");
-            }
         }
 
         private void ProcessInstruction()
@@ -181,14 +181,39 @@ namespace ClassLibrary.Syntax
                     AddError($"Идентификатор {_analyzer.CurrentName} не определён");
                 }
             }
+            else if (_analyzer.CurrentLexem == Lexem.If)
+            {
+                ProcessIf();
+            }
+            else if (_analyzer.CurrentLexem == Lexem.While)
+            {
+                ProcessWhile();
+            }
+            else if (_analyzer.CurrentLexem == Lexem.For)
+            {
+                ProcessFor();
+            }
+            else if (_analyzer.CurrentLexem == Lexem.Do)
+            {
+                ProcessDoWhile();
+            }
         }
 
-        private void ProcessAssign()
+        private void ProcessAssign(Lexem lexem = Lexem.None)
         {
             _analyzer.ProcessNextLexem();
             if (_analyzer.CurrentLexem == Lexem.Assign)
             {
                 _analyzer.ProcessNextLexem();
+                if (lexem == Lexem.To)
+                {
+                    tType t = ProcessSubExpression();
+                    if (t != tType.Integer)
+                    {
+                        AddError("Нельзя назначить в цикл For нечисловое значение");
+                    }
+                    return;
+                }
                 ProcessExpression();
                 if (_analyzer.CurrentLexem != Lexem.Separator && _analyzer.CurrentLexem != Lexem.Semicolon)
                 {
@@ -210,11 +235,6 @@ namespace ClassLibrary.Syntax
             }
         }
 
-        private bool IsOperand(Lexem lexem)
-        {
-            return lexem == Lexem.Name || lexem == Lexem.Number || lexem == Lexem.LeftBracket;
-        }
-
         private tType ProcessExpression()
         {
             tType t = ProcessSumOrSub();
@@ -223,7 +243,85 @@ namespace ClassLibrary.Syntax
                 AddError("Найдена лишняя закрывающая скобка");
                 _analyzer.ProcessNextLexem();
             }
+            if (_analyzer.CurrentLexem == Lexem.Equal ||
+                _analyzer.CurrentLexem == Lexem.Not ||
+                _analyzer.CurrentLexem == Lexem.Less ||
+                _analyzer.CurrentLexem == Lexem.Greater ||
+                _analyzer.CurrentLexem == Lexem.LessEqual ||
+                _analyzer.CurrentLexem == Lexem.GreaterEqual)
+            {
+                _analyzer.ProcessNextLexem();
+                ProcessSumOrSub();
+                t = tType.Logical;
+            }
             return t;
+        }
+
+        private void ProcessIf()
+        {
+            CheckLexem(Lexem.If);
+            ProcessExpression();
+            CheckLexem(Lexem.Then);
+            CheckLexem(Lexem.Separator);
+            CheckLexem(Lexem.IfBegin);
+            CheckLexem(Lexem.Separator);
+            ProcessSequenceInstructions();
+            while (_analyzer.CurrentLexem == Lexem.ElseIf)
+            {
+                _analyzer.ProcessNextLexem();
+                ProcessExpression();
+                CheckLexem(Lexem.Then);
+                CheckLexem(Lexem.Separator);
+                ProcessSequenceInstructions();
+            }
+            if (_analyzer.CurrentLexem == Lexem.Else)
+            {
+                _analyzer.ProcessNextLexem();
+                ProcessSequenceInstructions();
+            }
+            CheckLexem(Lexem.IfEnd);
+            CheckLexem(Lexem.Separator);
+        }
+
+        private void ProcessWhile()
+        {
+            CheckLexem(Lexem.While);
+            ProcessExpression();
+            CheckLexem(Lexem.Do);
+            CheckLexem(Lexem.Separator);
+            CheckLexem(Lexem.WhileBegin);
+            ProcessSequenceInstructions();
+            CheckLexem(Lexem.WhileEnd);
+            CheckLexem(Lexem.Separator);
+        }
+
+        private void ProcessFor()
+        {
+            CheckLexem(Lexem.For);
+            ProcessAssign(Lexem.To);
+            CheckLexem(Lexem.To);
+            ProcessExpression();
+            CheckLexem(Lexem.Do);
+            CheckLexem(Lexem.Separator);
+            CheckLexem(Lexem.ForBegin);
+            CheckLexem(Lexem.Separator);
+            ProcessSequenceInstructions();
+            CheckLexem(Lexem.ForEnd);
+            CheckLexem(Lexem.Separator);
+        }
+
+        private void ProcessDoWhile()
+        {
+            CheckLexem(Lexem.Do);
+            CheckLexem(Lexem.Separator);
+            CheckLexem(Lexem.DoBegin);
+            CheckLexem(Lexem.Separator);
+            ProcessSequenceInstructions();
+            CheckLexem(Lexem.DoEnd);
+            CheckLexem(Lexem.Separator);
+            CheckLexem(Lexem.While);
+            ProcessExpression();
+            CheckLexem(Lexem.Separator);
         }
 
         private tType ProcessSumOrSub()
