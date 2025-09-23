@@ -2,6 +2,7 @@
 using ClassLibrary.Generator;
 using ClassLibrary.Lexems;
 using ClassLibrary.Lexems.Models;
+using System.Linq.Expressions;
 
 namespace ClassLibrary.Syntax
 {
@@ -16,7 +17,9 @@ namespace ClassLibrary.Syntax
         private int _bracketLevel = 0;
         private string _currentLabel = "";
         private string _forVar = "";
+        private string _assignVar = "";
         private bool _hasError = false;
+        private bool _awaitBool = false;
 
         public List<SyntaxError> Errors => _errors;
 
@@ -207,7 +210,15 @@ namespace ClassLibrary.Syntax
             if (_analyzer.CurrentLexem == Lexem.Assign)
             {
                 _forVar = _analyzer.CurrentName;
-                _analyzer.ProcessNextLexem();
+                Identificator id = _nameTable.GetIdentificator(_forVar);
+                if (id != null)
+                {
+                    if (id.Type == tType.Logical)
+                    {
+                        _awaitBool = true;
+                    }
+                }
+                    _analyzer.ProcessNextLexem();
                 if (lexem == Lexem.To)
                 {
                     tType t = ProcessSubExpression();
@@ -219,7 +230,23 @@ namespace ClassLibrary.Syntax
 
                     return;
                 }
-                ProcessExpression();
+                tType type = ProcessExpression();
+                Identificator x = _nameTable.GetIdentificator(_forVar);
+                if (x != null)
+                {
+                    if (x.Type == tType.Logical && type != tType.Logical)
+                    {
+                        AddError($"Логической переменной '{_forVar}' можно присваивать только логические выражения (результаты сравнений), получен тип: {type}");
+                        _hasError = true;
+                    }
+                    else if (x.Type == tType.Integer && type != tType.Integer)
+                    {
+                        AddError($"Целочисленной переменной '{_forVar}' можно присваивать только целочисленные выражения, получен тип: {type}");
+                        _hasError = true;
+                    }
+                }
+
+
                 if (_analyzer.CurrentLexem != Lexem.Separator && _analyzer.CurrentLexem != Lexem.Semicolon)
                 {
                     AddError("Отсутствует операнд");
@@ -238,6 +265,7 @@ namespace ClassLibrary.Syntax
                 _analyzer.ProcessNextLexem();
                 ProcessExpression();
             }
+            _awaitBool = false;
         }
 
         private tType ProcessExpression()
@@ -256,6 +284,7 @@ namespace ClassLibrary.Syntax
                 _analyzer.CurrentLexem == Lexem.GreaterEqual)
             {
                 string transition = "";
+                Lexem leftLexem = _analyzer.CurrentLexem;
                 switch (_analyzer.CurrentLexem)
                 {
                     case Lexem.Equal:
@@ -291,6 +320,7 @@ namespace ClassLibrary.Syntax
                 _currentLabel = "";
                 t = tType.Logical;
             }
+
             return t;
         }
 
@@ -358,31 +388,44 @@ namespace ClassLibrary.Syntax
         {
             CheckLexem(Lexem.For);
             string varName = _analyzer.CurrentName;
+            string startLabel = "";
+            string exitLabel = "";
             Identificator x = _nameTable.GetIdentificator(varName);
+            if (x == null || x.Category != tCat.Var || x.Type != tType.Integer)
+            {
+                AddError("Идентификатор не определён");
+            }
 
             ProcessAssign(Lexem.To);
-            _generator.AddInstruction("pop ax");
-            _generator.AddInstruction("mov " + _forVar + ", ax");
+            if (x != null && x.Category == tCat.Var)
+            {
+                _generator.AddInstruction("pop ax");
+                _generator.AddInstruction("mov " + _forVar + ", ax");
 
-            _generator.AddLabel();
-            string startLabel = _generator.GetCurrentLabel();
-            _generator.AddLabel();
-            string exitLabel = _generator.GetCurrentLabel();
+                _generator.AddLabel();
+                startLabel = _generator.GetCurrentLabel();
+                _generator.AddLabel();
+                exitLabel = _generator.GetCurrentLabel();
 
-            _generator.AddInstruction(startLabel + ":");
+                _generator.AddInstruction(startLabel + ":");
 
-            _generator.AddInstruction("mov ax, " + x.Name);
-            _generator.AddInstruction("push ax");
+                _generator.AddInstruction("mov ax, " + x.Name);
+                _generator.AddInstruction("push ax");
+            }
+
             tType t = ProcessSubExpression();
             if (t != tType.Integer)
             {
                 AddError("Нельзя назначить в цикл For нечисловое значение");
             } 
-            _generator.AddInstruction("pop bx");
-            _generator.AddInstruction("pop ax");
-            _generator.AddInstruction("cmp ax, bx");
-            _generator.AddInstruction("jg " + exitLabel);
 
+            if (x != null && x.Category == tCat.Var && t == tType.Integer)
+            {
+                _generator.AddInstruction("pop bx");
+                _generator.AddInstruction("pop ax");
+                _generator.AddInstruction("cmp ax, bx");
+                _generator.AddInstruction("jg " + exitLabel);
+            }
             CheckLexem(Lexem.Do);
             CheckLexem(Lexem.Separator);
             CheckLexem(Lexem.ForBegin);
@@ -390,12 +433,15 @@ namespace ClassLibrary.Syntax
 
             ProcessSequenceInstructions();
 
-            _generator.AddInstruction("mov ax, " + x.Name);
-            _generator.AddInstruction("add ax, 1");
-            _generator.AddInstruction("mov " + x.Name + ", ax");
-            _generator.AddInstruction("jmp " + startLabel);
+            if (x != null && x.Category == tCat.Var && t == tType.Integer)
+            {
+                _generator.AddInstruction("mov ax, " + x.Name);
+                _generator.AddInstruction("add ax, 1");
+                _generator.AddInstruction("mov " + x.Name + ", ax");
+                _generator.AddInstruction("jmp " + startLabel);
 
-            _generator.AddInstruction(exitLabel + ":");
+                _generator.AddInstruction(exitLabel + ":");
+            }
 
             CheckLexem(Lexem.ForEnd);
             CheckLexem(Lexem.Separator);
@@ -644,17 +690,26 @@ namespace ClassLibrary.Syntax
             }
             else if (_analyzer.CurrentLexem == Lexem.Number)
             {
+                tType temp = tType.Integer;
+                if (_awaitBool)
+                {
+                   if ( !(_analyzer.CurrentName == "0" || _analyzer.CurrentName == "1"))
+                    {
+                        AddError("Ожидалось булево значение");
+                    }
+                    temp = tType.Logical;
+                }
                 _generator.AddInstruction("mov ax, " + _analyzer.CurrentName);
                 _generator.AddInstruction("push ax");
                 _analyzer.ProcessNextLexem();
-                
+
                 //if (_analyzer.CurrentLexem == Lexem.Number || _analyzer.CurrentLexem == Lexem.Name)
                 //{
                 //    AddError("Ожидался оператор");
                 //    _analyzer.ProcessNextLexem();
                 //    return tType.None;
                 //}
-                return tType.Integer;
+                return temp;
             }
             else if (_analyzer.CurrentLexem == Lexem.LeftBracket)
             {
@@ -729,6 +784,19 @@ namespace ClassLibrary.Syntax
         public string GetCommands()
         {
             return _generator.GetAllCommands();
+        }
+
+        public string ErrorsToString()
+        {
+            string lexicalErrors = _analyzer.ErrorsToString();
+            if (_errors.Count() > 0)
+            {
+                foreach (SyntaxError error in _errors)
+                {
+                    lexicalErrors += error.ToString();
+                }
+            }
+            return lexicalErrors;
         }
     }
 

@@ -1,14 +1,13 @@
 ﻿using Avalonia.Platform.Storage;
 using ClassLibrary.Files;
-using ClassLibrary.Lexems;
 using ClassLibrary.Lexems.Exceptions;
-using ClassLibrary.Lexems.Models;
 using ClassLibrary.Syntax;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MsBox.Avalonia.Enums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,7 +19,15 @@ namespace Translator.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelMessageBox
     {
+        private const string TASM_PATH = "F:\\API\\DOSBox-0.74-3";
+        private const string CODE_PATH = "F:\\API\\DOSBox-0.74-3\\ASM\\code.asm";
+
         private readonly IStorageService _storageService;
+
+        private bool _isSuccesful = false;
+        private bool _isCompile = false;
+        private Reader _reader;
+        private SyntaxAnalyser _analyser;
 
         [ObservableProperty]
         private string _originalCode;
@@ -41,61 +48,23 @@ namespace Translator.ViewModels
         {
             try 
             {
+                _isSuccesful = false;
+                _isCompile = false;
+                OriginalCode = "";
+                ResultCode = "";
+                CompilationCode = "";
+                if (_reader != null)
+                {
+                    _reader.Dispose();
+                }
                 IEnumerable<IStorageFile> fileProperties = await _storageService.OpenFileAsync("MainWindow", 
                     new FileOpenOptions(StorageOpenConstants.OpenBaseTextFile.Value,
                     StorageOpenConstants.OpenBaseTextFile.Type));
                 if (fileProperties.Count() > 0)
                 {
-                    using (Reader reader = new Reader(fileProperties.First().Path.AbsolutePath))
-                    {
-                        OriginalCode = reader.ReadAllFile();
-                        SyntaxAnalyser analyser = new SyntaxAnalyser(reader);
-
-                        if (!analyser.Compile())
-                        {
-                            string message = "";
-                            foreach (SyntaxError error in analyser.Errors)
-                            {
-                                message += error.ToString() + "\n";
-                            }
-                            await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                               MessageBoxConstants.Error.Value, message,
-                               ButtonEnum.Ok));
-                        }
-                        else
-                        {
-                            CompilationCode = analyser.GetCommands();
-                        }
-                        //LexicalAnalyzer analyzer = new LexicalAnalyzer(reader);
-                        //NameTable nameTable = new NameTable();
-                        //while (analyzer.CurrentLexem != Lexem.EOF)
-                        //{
-                        //    if (analyzer.CurrentLexem == Lexem.Name
-                        //        && !nameTable.ContainsIdentificator(analyzer.CurrentName)) 
-                        //    {
-                        //        nameTable.AddIdentificator(analyzer.CurrentName, tCat.Var);
-                        //    }
-                        //    //await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                        //    //   MessageBoxConstants.Error.Value, $"{analyzer.CurrentName} - {analyzer.CurrentLexem}",
-                        //    //    ButtonEnum.Ok));
-                        //    analyzer.ProcessNextLexem();
-                        //}
-                        //LinkedListNode<Identificator> node = nameTable.GetAllIdentificators().First;
-                        //while (node != null)
-                        //{
-                        //    await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                        //      MessageBoxConstants.Error.Value, $"{node.Value.Name}",
-                        //       ButtonEnum.Ok));
-                        //    node = node.Next;
-                        //}
-                    }
+                    _reader = new Reader(fileProperties.First().Path.AbsolutePath);
+                    OriginalCode = _reader.ReadAllFile();
                 }
-            }
-            catch (LexicalException ex)
-            {
-                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
-                   MessageBoxConstants.Error.Value, ex.Message,
-                    ButtonEnum.Ok));
             }
             catch (ArgumentNullException ex)
             {
@@ -147,6 +116,13 @@ namespace Translator.ViewModels
         {
             try
             {
+                if (ResultCode == "")
+                {
+                    await MessageBoxHelper("MainWindow",
+                        new MessageBoxOptions(MessageBoxConstants.Error.Value,
+                        "Нет результата", ButtonEnum.Ok));
+                    return;
+                } 
                 IStorageFile fileProperties = await _storageService.SaveFileAsync("MainWindow",
                     new FileSaveOptions(StorageSaveConstants.OpenBaseTextFile.ShowPrompt,
                     StorageSaveConstants.OpenBaseTextFile.Extension,
@@ -156,7 +132,7 @@ namespace Translator.ViewModels
                 {
                     using (Writer writer = new Writer(true, fileProperties.Path.AbsolutePath))
                     {
-                        writer.WriteToFile("test");
+                        writer.WriteToFile(ResultCode);
                     }
                 }
             }
@@ -209,6 +185,165 @@ namespace Translator.ViewModels
                     ButtonEnum.Ok));
             }
             return;
+        }
+
+        [RelayCommand]
+        public async Task CompileCommand()
+        {
+            try
+            {
+                if (_isCompile)
+                {
+                    return;
+                }
+
+                _isCompile = true;
+                if (_reader == null)
+                {
+                    await MessageBoxHelper("MainWindow",
+                        new MessageBoxOptions(
+                            MessageBoxConstants.Error.Value,
+                            "Не выбран файл", ButtonEnum.Ok));
+                    return;
+                }
+
+                _analyser = new SyntaxAnalyser(_reader);
+
+                if (!(_isSuccesful = _analyser.Compile()))
+                {
+                    string errors = _analyser.ErrorsToString();
+                    if (errors != null)
+                    {
+                        CompilationCode = errors;
+                    }
+                }
+                else
+                {
+                    CompilationCode = "Синтаксический анализатор: ошибок не обнаружено";
+                    ResultCode = _analyser.GetCommands();
+                }
+            } 
+            catch (LexicalException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                   MessageBoxConstants.Error.Value, ex.Message,
+                    ButtonEnum.Ok));
+            }
+            catch (ArgumentNullException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Аргумент не найден",
+                    ButtonEnum.Ok));
+            }
+            catch (ArgumentException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Неверный аргумент",
+                    ButtonEnum.Ok));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Запрещённая операция",
+                    ButtonEnum.Ok));
+            }
+            catch (PathTooLongException ex) 
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Путь к файлу слишком длинный",
+                    ButtonEnum.Ok));
+            }
+            catch (FileNotFoundException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Файл не найден",
+                    ButtonEnum.Ok));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Нет доступа",
+                    ButtonEnum.Ok));
+            }
+            catch (IOException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Ошибка чтения",
+                    ButtonEnum.Ok));
+            }
+        }
+
+        [RelayCommand]
+        public async Task RunTranslator()
+        {
+            try
+            {
+                if (_isSuccesful)
+                {
+                    using (Writer write = new Writer(false, CODE_PATH))
+                    {
+                        write.WriteToFile(ResultCode);
+                    }
+                    Process process = new Process();
+                    process.StartInfo = new ProcessStartInfo(TASM_PATH + "\\DOSBox.exe",
+                        TASM_PATH + "\\ASM\\code.bat -noconsole");
+                    process.Start();
+                }
+                else
+                {
+                    await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                        MessageBoxConstants.Error.Value, "Невозможно выполнить",
+                        ButtonEnum.Ok));
+                }
+            }
+            catch (LexicalException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                   MessageBoxConstants.Error.Value, ex.Message,
+                    ButtonEnum.Ok));
+            }
+            catch (ArgumentNullException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Аргумент не найден",
+                    ButtonEnum.Ok));
+            }
+            catch (ArgumentException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Неверный аргумент",
+                    ButtonEnum.Ok));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Запрещённая операция",
+                    ButtonEnum.Ok));
+            }
+            catch (PathTooLongException ex) 
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Путь к файлу слишком длинный",
+                    ButtonEnum.Ok));
+            }
+            catch (FileNotFoundException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Файл не найден",
+                    ButtonEnum.Ok));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Нет доступа",
+                    ButtonEnum.Ok));
+            }
+            catch (IOException ex)
+            {
+                await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                    MessageBoxConstants.Error.Value, "Ошибка чтения",
+                    ButtonEnum.Ok));
+            }
         }
     }
 }

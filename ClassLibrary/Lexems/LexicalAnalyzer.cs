@@ -1,6 +1,8 @@
 ﻿using ClassLibrary.Files;
 using ClassLibrary.Lexems.Exceptions;
 using ClassLibrary.Lexems.Models;
+using ClassLibrary.Syntax;
+using System.Net.Http.Headers;
 
 namespace ClassLibrary.Lexems
 {
@@ -8,6 +10,7 @@ namespace ClassLibrary.Lexems
     {
         private readonly Reader _reader;
         private readonly KeywordsArray _keywords;
+        private List<LexicalError> _errors = new List<LexicalError>();
 
         private readonly int MAX_ID_LENGTH = 255;
         public int CurrentRow
@@ -129,7 +132,8 @@ namespace ClassLibrary.Lexems
                 case '^': _reader.ReadNextSymbol(); CurrentLexem = Lexem.XOR; return;
 
                 default:
-                    throw new LexicalException("Лексическая ошибка: лексема не распознана");
+                    AddError("Лексема не распознана");
+                    break;
             }
         }
 
@@ -179,6 +183,48 @@ namespace ClassLibrary.Lexems
             CurrentName = "";
             CurrentLexem = Lexem.None;
             throw new LexicalException(message);
+        }
+
+
+        private void AddError(string message)
+        {
+            LexicalError error = new LexicalError
+            {
+                Message = message,
+                LineNumber = CurrentRow,
+                Position = CurrentPosition,
+                CurrentSymbol = CurrentSymbol,
+            };
+
+            _errors.Add(error);
+        }
+
+        public string ErrorsToString()
+        {
+            if (_errors.Count() > 0)
+            {
+                string temp = "";
+                foreach (LexicalError error in _errors)
+                {
+                    temp += error.ToString();
+                }
+                return temp;
+            }
+            return "";
+
+        }
+    }
+
+    public class LexicalError
+    {
+        public string Message { get; set; }
+        public int LineNumber { get; set; }
+        public int Position { get; set; }
+        public char CurrentSymbol { get; set; }
+
+        public override string ToString()
+        {
+            return $"Лексическая ошибка в строке {LineNumber}, позиция {Position}: {Message} (текущий символ: '{CurrentSymbol}')";
         }
     }
 }

@@ -23,9 +23,8 @@
 				<MenuItem Header="Открыть" Command="{Binding OpenFileCommand}"/>
 				<MenuItem Header="Сохранить" Command="{Binding SaveFileCommand}"/>
 			</MenuItem>
-			<MenuItem Header="Выполнить">
-				<MenuItem Header="Открыть"/>
-			</MenuItem>
+			<MenuItem Header="Компиляция" Command="{Binding CompileCommand}"/>
+			<MenuItem Header="Выполнить" Command="{Binding RunTranslatorCommand}"/>
 		</Menu>
 		<Grid Grid.Row="1" ColumnDefinitions="*, *" Margin="15, 5, 15, 0">
 			<Grid Grid.Column="0" RowDefinitions="Auto, *">
