@@ -1,0 +1,4 @@
+Var a b c : Integer;
+Begin
+End
+Print c

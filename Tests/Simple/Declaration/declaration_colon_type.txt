@@ -1,0 +1,4 @@
+Var a, b, c
+Begin
+End
+Print c

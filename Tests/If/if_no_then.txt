@@ -1,0 +1,14 @@
+Var a, b, c : Integer;
+Begin
+	a := 1;
+	b := 2;
+	If a > b 
+	IfBegin
+		c := 5;
+	ElseIf a = b Then
+		c := 10;
+	Else
+		c := 0;
+	IfEnd
+End
+Print c

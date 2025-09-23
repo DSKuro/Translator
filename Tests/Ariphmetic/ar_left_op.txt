@@ -1,0 +1,7 @@
+Var a, b, c : Integer;
+Begin
+	a := 5;
+	b := 2;
+	c :=  + 2;
+End
+Print c

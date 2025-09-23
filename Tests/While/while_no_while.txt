@@ -1,0 +1,11 @@
+Var a, b : Integer;
+Begin
+	a := 5;
+	b := 0;
+	a > 0 Do
+	WhileBegin
+		a := a - 1;
+		b := b + 1;
+	WhileEnd
+End
+Print b

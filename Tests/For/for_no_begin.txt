@@ -1,0 +1,9 @@
+Var a, b : Integer;
+Begin
+	a := 5;
+	b := 0;
+	For a := 1 To 5 Do
+		b := b + 1;
+	ForEnd
+End
+Print b

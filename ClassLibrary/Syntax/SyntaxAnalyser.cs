@@ -133,6 +133,10 @@ namespace ClassLibrary.Syntax
             if (_analyzer.CurrentLexem != Lexem.Integer && _analyzer.CurrentLexem != Lexem.Logical)
             {
                 AddError($"Ожидался тип данных после двоеточия, но получена лексема '{_analyzer.CurrentLexem}'");
+                if (_analyzer.CurrentLexem != Lexem.Semicolon && _analyzer.CurrentLexem != Lexem.Separator)
+                {
+                    _analyzer.ProcessNextLexem();
+                }
             }
             else
             {
@@ -152,7 +156,10 @@ namespace ClassLibrary.Syntax
                 AddError($"Ожидалась точка с запятой после типа данных, но получена лексема '{_analyzer.CurrentLexem}'");
             }
 
-            _analyzer.ProcessNextLexem();
+            if (_analyzer.CurrentLexem != Lexem.Separator)
+            {
+                _analyzer.ProcessNextLexem();
+            }
         }
 
         private void ProcessSequenceInstructions()
@@ -184,6 +191,7 @@ namespace ClassLibrary.Syntax
                 else
                 {
                     AddError($"Идентификатор {_analyzer.CurrentName} не определён");
+                    _analyzer.ProcessNextLexem();
                 }
             }
             else if (_analyzer.CurrentLexem == Lexem.If)
@@ -270,58 +278,7 @@ namespace ClassLibrary.Syntax
 
         private tType ProcessExpression()
         {
-            tType t = ProcessSumOrSub();
-            while (_analyzer.CurrentLexem == Lexem.RightBracket && _bracketLevel <= 0)
-            {
-                AddError("Найдена лишняя закрывающая скобка");
-                _analyzer.ProcessNextLexem();
-            }
-            if (_analyzer.CurrentLexem == Lexem.Equal ||
-                _analyzer.CurrentLexem == Lexem.Not ||
-                _analyzer.CurrentLexem == Lexem.Less ||
-                _analyzer.CurrentLexem == Lexem.Greater ||
-                _analyzer.CurrentLexem == Lexem.LessEqual ||
-                _analyzer.CurrentLexem == Lexem.GreaterEqual)
-            {
-                string transition = "";
-                Lexem leftLexem = _analyzer.CurrentLexem;
-                switch (_analyzer.CurrentLexem)
-                {
-                    case Lexem.Equal:
-                        transition = "jne";
-                        break;
-
-                    case Lexem.Not:
-                        transition = "je";
-                        break;
-
-                    case Lexem.Greater:
-                        transition = "jle";
-                        break;
-
-                    case Lexem.GreaterEqual:
-                        transition = "jl";
-                        break;
-
-                    case Lexem.Less:
-                        transition = "jge";
-                        break;
-
-                    case Lexem.LessEqual:
-                        transition = "jg";
-                        break;
-                }
-                _analyzer.ProcessNextLexem();
-                ProcessSumOrSub();
-                _generator.AddInstruction("pop ax");
-                _generator.AddInstruction("pop bx");
-                _generator.AddInstruction("cmp bx, ax");
-                _generator.AddInstruction(transition + " " + _currentLabel);
-                _currentLabel = "";
-                t = tType.Logical;
-            }
-
-            return t;
+            return ProcessLogicalOr();
         }
 
         private void ProcessIf()
@@ -445,6 +402,112 @@ namespace ClassLibrary.Syntax
 
             CheckLexem(Lexem.ForEnd);
             CheckLexem(Lexem.Separator);
+        }
+
+        private tType ProcessLogicalOr()
+        {
+            tType leftType = ProcessLogicalAnd();
+            while (_analyzer.CurrentLexem == Lexem.Or)
+            {
+                _analyzer.ProcessNextLexem();
+                tType rightType = ProcessLogicalAnd();
+
+                if (leftType != tType.Logical || rightType != tType.Logical)
+                {
+                    AddError("Логическая операция | применима только к логическим выражениям");
+                    leftType = tType.None;
+                }
+                else
+                {
+                    _generator.AddInstruction("pop bx"); // правый операнд
+                    _generator.AddInstruction("pop ax"); // левый операнд
+                    _generator.AddInstruction("or ax, bx");
+                    _generator.AddInstruction("push ax");
+                    leftType = tType.Logical;
+                }
+            }
+            return leftType;
+        }
+
+        private tType ProcessLogicalAnd()
+        {
+            tType leftType = ProcessComparison();
+            while (_analyzer.CurrentLexem == Lexem.And)
+            {
+                _analyzer.ProcessNextLexem();
+                tType rightType = ProcessComparison();
+
+                if (leftType != tType.Logical || rightType != tType.Logical)
+                {
+                    AddError("Логическая операция & применима только к логическим выражениям");
+                    leftType = tType.None;
+                }
+                else
+                {
+                    _generator.AddInstruction("pop bx");
+                    _generator.AddInstruction("pop ax");
+                    _generator.AddInstruction("and ax, bx");
+                    _generator.AddInstruction("push ax");
+                    leftType = tType.Logical;
+                }
+            }
+            return leftType;
+        }
+
+        private tType ProcessComparison()
+        {
+            tType t = ProcessSumOrSub();
+            while (_analyzer.CurrentLexem == Lexem.RightBracket && _bracketLevel <= 0)
+            {
+                AddError("Найдена лишняя закрывающая скобка");
+                _analyzer.ProcessNextLexem();
+            }
+            if (_analyzer.CurrentLexem == Lexem.Equal ||
+                _analyzer.CurrentLexem == Lexem.Not ||
+                _analyzer.CurrentLexem == Lexem.Less ||
+                _analyzer.CurrentLexem == Lexem.Greater ||
+                _analyzer.CurrentLexem == Lexem.LessEqual ||
+                _analyzer.CurrentLexem == Lexem.GreaterEqual)
+            {
+                string transition = "";
+                Lexem leftLexem = _analyzer.CurrentLexem;
+                switch (_analyzer.CurrentLexem)
+                {
+                    case Lexem.Equal:
+                        transition = "jne";
+                        break;
+
+                    case Lexem.Not:
+                        transition = "je";
+                        break;
+
+                    case Lexem.Greater:
+                        transition = "jle";
+                        break;
+
+                    case Lexem.GreaterEqual:
+                        transition = "jl";
+                        break;
+
+                    case Lexem.Less:
+                        transition = "jge";
+                        break;
+
+                    case Lexem.LessEqual:
+                        transition = "jg";
+                        break;
+                }
+                _analyzer.ProcessNextLexem();
+                ProcessSumOrSub();
+                _generator.AddInstruction("pop ax");
+                _generator.AddInstruction("pop bx");
+                _generator.AddInstruction("cmp bx, ax");
+                _generator.AddInstruction(transition + " " + _currentLabel);
+                _currentLabel = "";
+                t = tType.Logical;
+            }
+
+            return t;
         }
 
         private void ProcessDoWhile()
@@ -688,6 +751,29 @@ namespace ClassLibrary.Syntax
                     return tType.None;
                 }
             }
+            else if (_analyzer.CurrentLexem == Lexem.Not)
+            {
+                Lexem unaryOp = _analyzer.CurrentLexem;
+                _analyzer.ProcessNextLexem();
+
+                t = ProcessSubExpression();
+
+                if (unaryOp == Lexem.Not)
+                {
+                    if (t != tType.Logical)
+                    {
+                        AddError("Унарная операция ! применима только к логическим выражениям");
+                        t = tType.None;
+                    }
+                    else
+                    {
+                        _generator.AddInstruction("pop ax");
+                        _generator.AddInstruction("xor ax, 1");
+                        _generator.AddInstruction("push ax");
+                    }
+                }
+                return t;
+            }
             else if (_analyzer.CurrentLexem == Lexem.Number)
             {
                 tType temp = tType.Integer;
@@ -735,7 +821,7 @@ namespace ClassLibrary.Syntax
             else
             {
                 AddError("Текущий символ не является ни числом, ни идентификатором");
-                _analyzer.ProcessNextLexem();
+                //_analyzer.ProcessNextLexem();
                 return t;
             }
         }
@@ -757,6 +843,7 @@ namespace ClassLibrary.Syntax
                 else
                 {
                     AddError($"Идентификатор {_analyzer.CurrentName} не определён");
+                    _analyzer.ProcessNextLexem();
                 }
             }
             else
@@ -770,12 +857,12 @@ namespace ClassLibrary.Syntax
             SyntaxError error = new SyntaxError
             {
                 Message = message,
-                //LineNumber = _reader.NumberOfRow,
-                //Position = _reader.SymbolPosition,
-                //CurrentSymbol = _reader.CurrentSymbol
-                LineNumber = _analyzer.CurrentRow,
-                Position = _analyzer.CurrentPosition,
-                CurrentSymbol = _analyzer.CurrentSymbol,
+                LineNumber = _reader.NumberOfRow,
+                Position = _reader.SymbolPosition,
+                CurrentSymbol = _reader.CurrentSymbol
+                //LineNumber = _analyzer.CurrentRow,
+                //Position = _analyzer.CurrentPosition,
+                //CurrentSymbol = _analyzer.CurrentSymbol,
             };
 
             _errors.Add(error);
@@ -793,7 +880,7 @@ namespace ClassLibrary.Syntax
             {
                 foreach (SyntaxError error in _errors)
                 {
-                    lexicalErrors += error.ToString();
+                    lexicalErrors += error.ToString() + "\n";
                 }
             }
             return lexicalErrors;

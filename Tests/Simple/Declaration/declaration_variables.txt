@@ -1,0 +1,4 @@
+Var : Integer;
+Begin
+End
+Print c

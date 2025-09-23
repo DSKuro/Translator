@@ -4,6 +4,7 @@
     {
         None, Name, Number, Comma, Var, Const, Type, Integer, Logical, Semicolon, Colon, Begin, End, If, Then, 
         ElseIf, Else, IfBegin, IfEnd,
+        NotEqual,
         For, To, ForBegin, ForEnd,
         While, WhileBegin, WhileEnd, Do, DoBegin, DoEnd,
         Multiplication,

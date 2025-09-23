@@ -126,7 +126,9 @@ namespace ClassLibrary.Lexems
 
                 case '(': _reader.ReadNextSymbol(); CurrentLexem = Lexem.LeftBracket; return;
                 case ')': _reader.ReadNextSymbol(); CurrentLexem = Lexem.RightBracket; return;
-                case '!': _reader.ReadNextSymbol(); CurrentLexem = Lexem.Not; return;
+                case '!': 
+                    _reader.ReadNextSymbol();
+                    CurrentLexem = _reader.CurrentSymbol == '=' ? Lexem.NotEqual : Lexem.Not ; return;
                 case '&': _reader.ReadNextSymbol(); CurrentLexem = Lexem.And; return;
                 case '|': _reader.ReadNextSymbol(); CurrentLexem = Lexem.Or; return;
                 case '^': _reader.ReadNextSymbol(); CurrentLexem = Lexem.XOR; return;
@@ -206,7 +208,7 @@ namespace ClassLibrary.Lexems
                 string temp = "";
                 foreach (LexicalError error in _errors)
                 {
-                    temp += error.ToString();
+                    temp += error.ToString() + "\n";
                 }
                 return temp;
             }

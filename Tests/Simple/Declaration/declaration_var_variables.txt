@@ -1,0 +1,4 @@
+ : Integer;
+Begin
+End
+Print c
