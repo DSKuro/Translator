@@ -17,7 +17,7 @@ namespace ClassLibrary.Syntax
         private int _bracketLevel = 0;
         private string _currentLabel = "";
         private string _forVar = "";
-        private string _assignVar = "";
+        private bool _compare = false;
         private bool _hasError = false;
         private bool _awaitBool = false;
 
@@ -292,6 +292,14 @@ namespace ClassLibrary.Syntax
             ProcessExpression();
             CheckLexem(Lexem.Then);
             CheckLexem(Lexem.Separator);
+            if (!_compare)
+            {
+                _generator.AddInstruction("pop ax");
+                _generator.AddInstruction("cmp ax, 0");
+                _generator.AddInstruction("je " + _currentLabel);
+            }
+            _compare = false;
+
             CheckLexem(Lexem.IfBegin);
             CheckLexem(Lexem.Separator);
             ProcessSequenceInstructions();
@@ -307,6 +315,13 @@ namespace ClassLibrary.Syntax
                 ProcessExpression();
                 CheckLexem(Lexem.Then);
                 CheckLexem(Lexem.Separator);
+                if (!_compare)
+                {
+                    _generator.AddInstruction("pop ax");
+                    _generator.AddInstruction("cmp ax, 0");
+                    _generator.AddInstruction("je " + _currentLabel);
+                }
+                _compare = false;
                 ProcessSequenceInstructions();
                 _generator.AddInstruction("jmp " + exitLabel);
                 _generator.AddInstruction(lowLabel + ":");
@@ -497,6 +512,7 @@ namespace ClassLibrary.Syntax
                         transition = "jg";
                         break;
                 }
+                _compare = true;
                 _analyzer.ProcessNextLexem();
                 ProcessSumOrSub();
                 _generator.AddInstruction("pop ax");

@@ -1,0 +1,12 @@
+Var a, b, c : Logical;
+Begin
+	a := 0;
+	b := 1;
+	If a & b Then
+	IfBegin
+		c := 1;
+	Else
+		c := 0;
+	IfEnd
+End
+Print c
