@@ -421,11 +421,11 @@ namespace ClassLibrary.Syntax
 
         private tType ProcessLogicalOr()
         {
-            tType leftType = ProcessLogicalAnd();
+            tType leftType = ProcessXor();
             while (_analyzer.CurrentLexem == Lexem.Or)
             {
                 _analyzer.ProcessNextLexem();
-                tType rightType = ProcessLogicalAnd();
+                tType rightType = ProcessXor();
 
                 if (leftType != tType.Logical || rightType != tType.Logical)
                 {
@@ -434,8 +434,8 @@ namespace ClassLibrary.Syntax
                 }
                 else
                 {
-                    _generator.AddInstruction("pop bx"); // правый операнд
-                    _generator.AddInstruction("pop ax"); // левый операнд
+                    _generator.AddInstruction("pop bx"); 
+                    _generator.AddInstruction("pop ax"); 
                     _generator.AddInstruction("or ax, bx");
                     _generator.AddInstruction("push ax");
                     leftType = tType.Logical;
@@ -466,6 +466,44 @@ namespace ClassLibrary.Syntax
                     leftType = tType.Logical;
                 }
             }
+            return leftType;
+        }
+
+        private tType ProcessXor()
+        {
+            tType leftType = ProcessLogicalAnd();
+
+            while (_analyzer.CurrentLexem == Lexem.XOR)
+            {
+                _analyzer.ProcessNextLexem();
+
+                tType rightType = ProcessLogicalAnd();
+
+                if (leftType != tType.Logical && leftType != tType.Integer ||
+                    rightType != tType.Logical && rightType != tType.Integer)
+                {
+                    AddError("Операция ^ применяется только к логическим или целочисленным выражениям");
+                    leftType = tType.None;
+                }
+                else if (leftType != rightType)
+                {
+                    AddError("Операнды операции ^ должны быть одного типа");
+                    leftType = tType.None;
+                }
+                else
+                {
+                    _generator.AddInstruction("pop bx");
+                    _generator.AddInstruction("pop ax");
+                    _generator.AddInstruction("xor ax, bx");
+                    if (leftType == tType.Logical)
+                    {
+                        _generator.AddInstruction("and ax, 1");
+                    }
+
+                    _generator.AddInstruction("push ax");
+                }
+            }
+
             return leftType;
         }
 

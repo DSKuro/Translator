@@ -19,8 +19,8 @@ namespace Translator.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelMessageBox
     {
-        private const string TASM_PATH = "D:\\API\\DOSBox-0.74-3";
-        private const string CODE_PATH = "D:\\API\\DOSBox-0.74-3\\ASM\\code.asm";
+        private const string TASM_PATH = "F:\\API\\DOSBox-0.74-3";
+        private const string CODE_PATH = "F:\\API\\DOSBox-0.74-3\\ASM\\code.asm";
 
         private readonly IStorageService _storageService;
 
