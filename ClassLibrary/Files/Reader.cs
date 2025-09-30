@@ -9,7 +9,7 @@
         private const char _carriage = '\r';
         private const char _tab = '\t';
 
-        private readonly StreamReader _streamReader;
+        private readonly StringReader _streamReader;
 
         public int SymbolPosition
         {
@@ -30,19 +30,16 @@
         {
             _filePath = filePath;
 
-            if (File.Exists(_filePath))
-            {
-                _streamReader = new StreamReader(_filePath);
-                NumberOfRow = 1;
-                SymbolPosition = 0;
-                CurrentSymbol = '\0';
-                ReadNextSymbol();
-            }
+            _streamReader = new StringReader(_filePath);
+            NumberOfRow = 1;
+            SymbolPosition = 0;
+            CurrentSymbol = '\0';
+            ReadNextSymbol();
         }
 
-        public string ReadAllFile()
+        public static string ReadAllFile(string filePath)
         {
-            return File.ReadAllText(_filePath);
+            return File.ReadAllText(filePath);
         }
 
         public void ReadNextSymbol()

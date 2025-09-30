@@ -1,0 +1,12 @@
+Var a, b, c : Integer;
+Begin
+	a := 77;
+	c := 2;
+	If a > 20 Then
+	IfBegin
+		b := a;
+	Else
+		b := c;
+	IfEnd
+End
+Print b

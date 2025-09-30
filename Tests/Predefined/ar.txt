@@ -1,0 +1,7 @@
+Var a, n, res : Integer;
+Begin
+	a := 2;
+	n := 5;
+	res := a + 3 * (n + 1) / a - 2;
+End
+Print res

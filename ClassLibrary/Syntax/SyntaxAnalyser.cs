@@ -210,6 +210,10 @@ namespace ClassLibrary.Syntax
             {
                 ProcessDoWhile();
             }
+            else if (_analyzer.CurrentLexem == Lexem.Print)
+            {
+                ProcessPrintInstruction();
+            }
         }
 
         private void ProcessAssign(Lexem lexem = Lexem.None)
@@ -332,7 +336,7 @@ namespace ClassLibrary.Syntax
                 ProcessSequenceInstructions();
             }
             CheckLexem(Lexem.IfEnd);
-            CheckLexem(Lexem.Separator);
+            //CheckLexem(Lexem.Separator);
             _generator.AddInstruction(exitLabel + ":");
         }
 
@@ -351,7 +355,7 @@ namespace ClassLibrary.Syntax
             CheckLexem(Lexem.WhileBegin);
             ProcessSequenceInstructions();
             CheckLexem(Lexem.WhileEnd);
-            CheckLexem(Lexem.Separator);
+            //CheckLexem(Lexem.Separator);
             _generator.AddInstruction("jmp " + upLabel);
             _generator.AddInstruction(lowLabel + ":");
         }

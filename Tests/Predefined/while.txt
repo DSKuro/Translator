@@ -1,0 +1,9 @@
+Var a, b, c, temp, othertemp, newtemp : Integer;
+Begin
+	a := 7;
+	While a < 14 Do
+	WhileBegin
+		a := a + 1;
+	WhileEnd
+End
+Print a

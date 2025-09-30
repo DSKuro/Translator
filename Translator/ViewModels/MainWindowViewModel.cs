@@ -19,13 +19,12 @@ namespace Translator.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelMessageBox
     {
-        private const string TASM_PATH = "F:\\API\\DOSBox-0.74-3";
-        private const string CODE_PATH = "F:\\API\\DOSBox-0.74-3\\ASM\\code.asm";
+        private const string TASM_PATH = "D:\\API\\DOSBox-0.74-3";
+        private const string CODE_PATH = "D:\\API\\DOSBox-0.74-3\\ASM\\code.asm";
 
         private readonly IStorageService _storageService;
 
         private bool _isSuccesful = false;
-        private bool _isCompile = false;
         private Reader _reader;
         private SyntaxAnalyser _analyser;
 
@@ -49,7 +48,6 @@ namespace Translator.ViewModels
             try 
             {
                 _isSuccesful = false;
-                _isCompile = false;
                 OriginalCode = "";
                 ResultCode = "";
                 CompilationCode = "";
@@ -62,8 +60,16 @@ namespace Translator.ViewModels
                     StorageOpenConstants.OpenBaseTextFile.Type));
                 if (fileProperties.Count() > 0)
                 {
-                    _reader = new Reader(fileProperties.First().Path.AbsolutePath);
-                    OriginalCode = _reader.ReadAllFile();
+                    if (File.Exists(fileProperties.FirstOrDefault().Path.AbsolutePath))
+                    {
+                        OriginalCode = Reader.ReadAllFile(fileProperties.FirstOrDefault().Path.AbsolutePath);
+                    }
+                    else
+                    {
+                        await MessageBoxHelper("MainWindow", new MessageBoxOptions(
+                            MessageBoxConstants.Error.Value, "Файл не существует",
+                            ButtonEnum.Ok));
+                    }
                 }
             }
             catch (ArgumentNullException ex)
@@ -192,20 +198,22 @@ namespace Translator.ViewModels
         {
             try
             {
-                if (_isCompile)
-                {
-                    return;
-                }
-
-                _isCompile = true;
-                if (_reader == null)
+                ResultCode = "";
+                if (OriginalCode == "")
                 {
                     await MessageBoxHelper("MainWindow",
                         new MessageBoxOptions(
                             MessageBoxConstants.Error.Value,
-                            "Не выбран файл", ButtonEnum.Ok));
+                            "Код не определён", ButtonEnum.Ok));
                     return;
                 }
+
+                if (_reader != null)
+                {
+                    _reader.Dispose();
+                }
+
+                _reader = new Reader(OriginalCode);
 
                 _analyser = new SyntaxAnalyser(_reader);
 

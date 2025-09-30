@@ -1,0 +1,5 @@
+Var a, n, res : Integer;
+Begin
+	ab := 2;
+End
+Print a
