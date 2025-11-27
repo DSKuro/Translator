@@ -1,0 +1,13 @@
+Var a : Integer;
+Begin
+	a := 15;
+	If a < 10 Then
+	IfBegin
+		a := a * 3;
+	ElseIf a = 20 Then
+		a := a + 50;
+	Else 
+		a := a - 15;
+	IfEnd
+End
+Print a

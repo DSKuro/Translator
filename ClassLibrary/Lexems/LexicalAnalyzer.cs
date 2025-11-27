@@ -102,7 +102,15 @@ namespace ClassLibrary.Lexems
 
                 case '>':
                     _reader.ReadNextSymbol();
-                    CurrentLexem = _reader.CurrentSymbol == '=' ? Lexem.GreaterEqual : Lexem.Greater;
+                    if (_reader.CurrentSymbol == '=')
+                    {
+                        _reader.ReadNextSymbol();
+                        CurrentLexem = Lexem.GreaterEqual;
+                    }
+                    else
+                    {
+                        CurrentLexem = Lexem.Greater;
+                    }
                     return;
 
                 case '+': _reader.ReadNextSymbol(); CurrentLexem = Lexem.Plus; return;
@@ -126,9 +134,18 @@ namespace ClassLibrary.Lexems
 
                 case '(': _reader.ReadNextSymbol(); CurrentLexem = Lexem.LeftBracket; return;
                 case ')': _reader.ReadNextSymbol(); CurrentLexem = Lexem.RightBracket; return;
-                case '!': 
+                case '!':
                     _reader.ReadNextSymbol();
-                    CurrentLexem = _reader.CurrentSymbol == '=' ? Lexem.NotEqual : Lexem.Not ; return;
+                    if (_reader.CurrentSymbol == '=')
+                    {
+                        _reader.ReadNextSymbol();
+                        CurrentLexem = Lexem.NotEqual;
+                    }
+                    else
+                    {
+                        CurrentLexem = Lexem.Not;
+                    }
+                    return;
                 case '&': _reader.ReadNextSymbol(); CurrentLexem = Lexem.And; return;
                 case '|': _reader.ReadNextSymbol(); CurrentLexem = Lexem.Or; return;
                 case '^': _reader.ReadNextSymbol(); CurrentLexem = Lexem.XOR; return;

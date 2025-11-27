@@ -1,0 +1,15 @@
+Var a, b : Integer;
+Begin
+	a := 48;
+	b := 18;
+	While a != b Do
+	WhileBegin
+		If a > b Then
+		IfBegin
+			a := a - b;
+		Else
+			b := b - a;
+		IfEnd
+	WhileEnd
+End
+Print a

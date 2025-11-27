@@ -1,0 +1,13 @@
+Var sum, n, i : Integer;
+Begin
+	sum := 0;
+	n := 10;
+	For i := 1 To n Do
+	ForBegin
+		If (i & 1) = 0 Then
+		IfBegin
+			sum := sum + i;
+		IfEnd
+	ForEnd
+End
+Print sum

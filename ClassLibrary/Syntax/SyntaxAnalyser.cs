@@ -431,7 +431,8 @@ namespace ClassLibrary.Syntax
                 _analyzer.ProcessNextLexem();
                 tType rightType = ProcessXor();
 
-                if (leftType != tType.Logical || rightType != tType.Logical)
+                if (leftType != tType.Logical && leftType != tType.Integer ||
+                    rightType != tType.Logical && rightType != tType.Integer)
                 {
                     AddError("Логическая операция | применима только к логическим выражениям");
                     leftType = tType.None;
@@ -456,7 +457,8 @@ namespace ClassLibrary.Syntax
                 _analyzer.ProcessNextLexem();
                 tType rightType = ProcessComparison();
 
-                if (leftType != tType.Logical || rightType != tType.Logical)
+                if (leftType != tType.Logical && leftType != tType.Integer ||
+                    rightType != tType.Logical && rightType != tType.Integer)
                 {
                     AddError("Логическая операция & применима только к логическим выражениям");
                     leftType = tType.None;
@@ -520,6 +522,7 @@ namespace ClassLibrary.Syntax
                 _analyzer.ProcessNextLexem();
             }
             if (_analyzer.CurrentLexem == Lexem.Equal ||
+                _analyzer.CurrentLexem == Lexem.NotEqual ||
                 _analyzer.CurrentLexem == Lexem.Not ||
                 _analyzer.CurrentLexem == Lexem.Less ||
                 _analyzer.CurrentLexem == Lexem.Greater ||
@@ -535,6 +538,10 @@ namespace ClassLibrary.Syntax
                         break;
 
                     case Lexem.Not:
+                        transition = "je";
+                        break;
+
+                    case Lexem.NotEqual:
                         transition = "je";
                         break;
 
