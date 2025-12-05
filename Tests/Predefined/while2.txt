@@ -1,10 +1,11 @@
 Var a, b, c, temp, othertemp, newtemp : Integer;
 Begin
 	a := 7;
+	othertemp := 0;
 	While a < 14 Do
 	WhileBegin
 		a := a + 1;
-		if a <= 20 Then
+		If a <= 20 Then
 		IfBegin
 			othertemp := othertemp + 1;
 		IfEnd
